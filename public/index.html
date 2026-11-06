@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing Spend Review — demo</title>
+<meta name="description" content="NexaGroup (fictional) — quarterly marketing expense (Promotional & Trade offers) vs plan, and SBU-wise full-year marketing summary. Runs on synthetic demo data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="eyebrow">NexaGroup · Strategic Planning (portfolio demo)</div>
+    <h1>Marketing Spend Review <span class="muted" id="fy-label"></span></h1>
+  </div>
+  <div class="actions">
+    <div class="sync" id="sync-status" aria-live="polite">Loading…</div>
+    <a class="btn ghost" id="sheet-link" target="_blank" rel="noopener">Open sheet ↗</a>
+    <button class="btn primary" id="refresh-btn" type="button"><span class="spin" aria-hidden="true">⟳</span> Refresh data</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" class="tab active" data-tab="q1" aria-selected="true">1 · Q1 Promotional &amp; Trade vs Plan</button>
+  <button role="tab" class="tab" data-tab="fy" aria-selected="false">2 · SBU-wise Marketing Summary</button>
+  <button role="tab" class="tab" data-tab="notes" aria-selected="false">Data notes &amp; method</button>
+</nav>
+
+<main>
+  <div id="error" class="banner hidden"></div>
+
+  <div class="banner demo-note">
+    <b>Portfolio demo.</b> Every company name, business unit and figure on this page is <b>synthetic demo data</b>
+    (<code>assets/demo-data.js</code>) — no real organisation, ledger or transaction is shown. The parsing,
+    classification and charting code is the production logic; set <code>demoMode:false</code> in
+    <code>assets/config.js</code> to point the same dashboard at your own spreadsheet.
+  </div>
+
+  <!-- ===================== PART 1 ===================== -->
+  <section id="tab-q1" class="panel">
+    <div class="section-head">
+      <h2 id="q1-title">Q1 achievement — expense vs budget</h2>
+      <p class="sub">Achievement = Q1 expense ÷ Q1 budget (budget utilisation). All figures in BDT Crore.</p>
+    </div>
+    <div class="kpis" id="q1-kpis"></div>
+    <div class="card insights"><h3>Key takeaways</h3><ul id="q1-insights"></ul></div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="row-between"><h3>Q1 utilisation by SBU</h3>
+          <div class="seg-ctl" id="q1-scale" role="group" aria-label="Scale"><button type="button" data-m="pct" class="on">% of budget</button><button type="button" data-m="abs">Absolute (Cr)</button></div></div>
+        <p class="hint">Bar = expense, tick = budget (100%). Sorted by budget size.</p>
+        <div id="q1-bullets"></div>
+      </div>
+      <div class="card">
+        <h3>Q1 expense mix: Promotional vs Trade offers</h3>
+        <div class="legend"><span><i class="sw promo"></i>Promotional</span><span><i class="sw trade"></i>Trade offers</span></div>
+        <div id="q1-mix"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Month-by-month (group)</h3>
+      <div class="legend"><span><i class="sw budget"></i>Budget</span><span><i class="sw promo"></i>Promotional expense</span><span><i class="sw trade"></i>Trade expense</span></div>
+      <div id="q1-month"></div>
+    </div>
+
+    <div class="card">
+      <h3>SBU scorecard — Q1</h3>
+      <div class="table-wrap" id="q1-table"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Largest over-budget lines (Q1)</h3>
+        <div class="table-wrap" id="q1-over"></div>
+      </div>
+      <div class="card">
+        <h3>Largest unspent budget lines (Q1)</h3>
+        <div class="table-wrap" id="q1-under"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>Activity drill-down — Q1</h3>
+        <div class="filters">
+          <label>SBU <select id="q1-sbu"></select></label>
+          <label>Type <select id="q1-type"><option value="">All</option><option>Promotional</option><option>Trade</option></select></label>
+          <label class="chk"><input type="checkbox" id="q1-active" checked> Only lines with Q1 budget or expense</label>
+        </div>
+      </div>
+      <div class="table-wrap" id="q1-drill"></div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 2 ===================== -->
+  <section id="tab-fy" class="panel hidden">
+    <div class="section-head">
+      <h2>SBU-wise summary of full marketing budget</h2>
+      <p class="sub">Full fiscal-year plan vs expense recorded so far. All figures in BDT Crore.</p>
+    </div>
+    <div class="kpis" id="fy-kpis"></div>
+
+    <div class="card">
+      <h3>SBU summary</h3>
+      <div class="table-wrap" id="fy-table"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Share of group annual budget</h3>
+        <div id="fy-share"></div>
+      </div>
+      <div class="card">
+        <h3>Annual budget mix: Promotional vs Trade offers</h3>
+        <div class="legend"><span><i class="sw promo"></i>Promotional</span><span><i class="sw trade"></i>Trade offers</span></div>
+        <div id="fy-mix"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>Monthly budget phasing vs expense</h3>
+        <div class="filters"><label>SBU <select id="fy-month-sbu"></select></label></div>
+      </div>
+      <div class="legend"><span><i class="sw budget"></i>Budget</span><span><i class="sw promo"></i>Promotional expense</span><span><i class="sw trade"></i>Trade expense</span></div>
+      <div id="fy-month"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <h3>Category breakdown</h3>
+        <div class="filters"><label>SBU <select id="fy-cat-sbu"></select></label></div>
+      </div>
+      <p class="hint">Bar = expense to date, tick = annual budget.</p>
+      <div id="fy-cat"></div>
+    </div>
+  </section>
+
+  <!-- ===================== NOTES ===================== -->
+  <section id="tab-notes" class="panel hidden">
+    <div class="card">
+      <h3>Method</h3>
+      <ul class="plain" id="method"></ul>
+    </div>
+    <div class="card">
+      <h3>Data quality flags (auto-detected on every refresh)</h3>
+      <div class="table-wrap" id="notes"></div>
+    </div>
+    <div class="card">
+      <h3>Promotional / Trade classification</h3>
+      <p class="hint">Edit <code>assets/config.js</code> → <code>tradeKeywords</code> / <code>overrides</code> to change it.</p>
+      <div class="table-wrap" id="class-table"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">Source: synthetic demo dataset (fictional “Marketing Budget vs Expense” workbook, one tab per business unit). <span id="foot-sync"></span></footer>
+<div id="tip" class="tip" role="tooltip"></div>
+
+<script src="assets/config.js?v=3"></script>
+<script src="assets/demo-data.js?v=3"></script>
+<script src="assets/app.js?v=3"></script>
+</body>
+</html>

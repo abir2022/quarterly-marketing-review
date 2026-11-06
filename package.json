@@ -1,0 +1,14 @@
+{
+  "name": "nexa-marketing-review",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Marketing budget-vs-expense review dashboard (portfolio demo, synthetic data)",
+  "scripts": {
+    "dev": "vite public",
+    "build": "vite build public",
+    "preview": "vite preview public"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

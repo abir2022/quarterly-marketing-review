@@ -1,0 +1,16 @@
+# Optional edge deployment (static assets + the small /api/tabs Worker).
+# The demo needs nothing here — open public/index.html or run `npm run dev`.
+# "name" must match the Worker name created in your own Cloudflare account.
+name = "nexa-marketing-review"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# placeholder — set your own sheet id here (or as an encrypted variable)
+SHEET_ID = "REPLACE_WITH_YOUR_SHEET_ID"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
