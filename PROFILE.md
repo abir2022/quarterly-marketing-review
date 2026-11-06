@@ -1,64 +1,115 @@
-# Marketing Spend Review (NexaGroup demo)
+# PROFILE — Marketing Spend Review (NexaGroup portfolio demo)
 
-**One-liner:** A quarter-to-date marketing budget-vs-expense dashboard that classifies
-every spend line as Promotional or Trade offer and turns a messy spreadsheet into a
-review-ready story — running here on fully synthetic data.
+## 1. Abstract
 
-## Problem
+This artifact is a zero-backend, quarterly marketing budget-vs-expense dashboard for a
+fictional multi-business-unit group ("NexaGroup"). It ingests one spreadsheet tab per
+business unit, each holding Budget and Expense rows for twelve months in BDT Crore, and
+turns the raw grid into a review-ready story: quarter-to-date achievement (utilisation)
+per unit, a Promotional vs Trade-offer classification driven by editable keyword rules,
+monthly phasing charts, the largest over-budget and unspent lines, an activity
+drill-down, a full-year summary, and automatically detected data-quality flags. All
+figures in this portfolio copy are synthetic and embedded (`assets/demo-data.js`), fed
+through exactly the same parser used against a live sheet, so the dashboard runs
+offline with no credentials. The UI follows a shared dark-first design system
+(data-dense, Fira Sans/Fira Code, motion-as-feedback). The value proposition is that
+the classification and quality-flagging an analyst would do by hand is encoded once,
+transparently, in a configuration file.
 
-Group marketing spend usually lives in a workbook with one tab per business unit, dozens of
-activity lines per tab, inconsistent labels, and numbers typed in mixed units. Building the
-quarterly review means hours of manual tab-hopping, and the classification that leadership
-actually asks about ("how much of this was real brand investment vs trade discounting?")
-is decided by hand, differently by every analyst.
+## 2. Problem Framing
 
-## Solution
+Group marketing spend typically lives in a workbook with one tab per business unit,
+dozens of activity lines per tab, inconsistent labels, and numbers typed in mixed
+units (sometimes Taka instead of Crore). Preparing the quarterly review means hours of
+manual tab-hopping, and the question leadership actually asks — "how much of this was
+real brand investment vs trade discounting?" — is answered differently by every
+analyst because the Promotional/Trade boundary is decided ad hoc. There is no single
+defensible source of the classification, the utilisation bands, or the exceptions. The
+artifact exists to make that review reproducible: same parse, same rules, same flags,
+every quarter.
 
-A zero-backend dashboard that reads one tab per business unit, parses the Budget/Expense
-rows for 12 months, classifies each line by keyword rules, and renders the review:
-achievement vs plan, promotional/trade mix, month phasing, outlier lines and a drill-down —
-with automatic data-quality flags so the analyst can defend the numbers. In this portfolio
-copy the same code path is fed an embedded synthetic dataset, so it renders offline with no
-credentials.
+## 3. Related Practice
 
-## Features
+In analyst work this kind of review draws on budget-utilisation (achievement) tracking —
+actual spend against phased plan, usually banded red/amber/green around 100% —
+expense-mix analysis that separates brand/promotional investment from trade
+discounting (dealer commissions, rebates, POSM, sales-boost schemes), because the two
+behave very differently in a P&L. Marketing-effectiveness teams also keep ROMI-style
+ledgers where every line must be attributable; before ROI can be discussed, spend has
+to be *trustworthy*, which is why practical dashboards carry data-quality flags
+(unbudgeted spend, template tabs, unit typos) as a first-class feature rather than an
+afterthought. Loss-bridge thinking appears in the over/under-budget variance tables:
+the story is in the exceptions, not the average.
 
-* Part 1 — quarterly achievement (utilisation) per unit, Promotional vs Trade split,
-  monthly budget/expense chart, largest over-budget and unspent lines, filterable activity drill-down.
-* Part 2 — full-year plan per unit, share of group, promo/trade mix, spend to date, remaining budget,
-  category breakdown.
-* Keyword-driven Promotional/Trade classification with per-line overrides (configurable, no code).
-* Auto-detected data-quality flags: unbudgeted spend, Q1-only budgets, plain-Taka entries,
-  missing month headers, empty template tabs.
-* Sortable tables, hover tooltips, % / absolute toggle, light + dark theme, localStorage tab memory.
-* Optional read-only edge API (`worker.js`) that discovers new unit tabs automatically.
+## 4. Methodology & Data Design
 
-## Tech stack
+Conceptually the data is a read-only Google Sheet (one tab per SBU, Jul-26 … Jun-27
+columns); for the portfolio build, synthetic CSV strings of identical shape live in
+`assets/demo-data.js`. Transformation steps: (1) tab discovery — live from the sheet's
+`htmlview` tab list, falling back to a worker endpoint or `config.js`; (2) structural
+parse — locate the month-header row and the Budget/Expense label column, pair rows per
+activity line; (3) unit normalisation — any cell ≥ `bdtThreshold` is treated as plain
+Taka and divided by 1e7; (4) classification — a line is Trade if its category or
+activity text contains any `tradeKeywords` token, else Promotional, with exact
+`overrides`; (5) aggregation at line/SBU/group level. Metric definitions:
+achievement/utilisation `U = expense / budget`; variance `V = expense − budget`;
+Q1 = sum of the three `q1Months` columns; status bands — under-utilised `U < 70%`,
+on plan `70–100%`, slightly over `≤ 110%`, over budget `> 110%`, unbudgeted = expense
+with zero budget. Rows that fail validation raise flags instead of being silently kept.
 
-Vanilla JavaScript (ES2020, no framework) · hand-rolled SVG/CSS charts · CSV parsing from
-scratch · Vite (dev/build/preview, optional) · Cloudflare-Workers-style edge function example.
+## 5. Analytical Framework
 
-## Demo disclaimer
+The UI encodes a decision order: first the group-level truth (KPI row: budget, expense,
+achievement, promo/trade split), then *where* the story is (utilisation by SBU, sorted
+by budget size, colour only as a secondary channel to the status pill), then *what* to
+act on (largest over-budget lines and unspent lines as exception tables, each sortable),
+then *why* (activity drill-down filtered by SBU/type). The Promotional-vs-Trade mix is
+shown on both the quarter and the annual budget because leadership questions about
+"real brand investment" are mix questions. Empty or one-quarter-only budgets surface as
+flags rather than zeroes, so understated achievement is visible, not hidden.
 
-All names and numbers are invented for this portfolio piece. "NexaGroup", "Nexa Cement",
-"Nexa Steel", "Nexa AgroFeeds", "Nexa Foods" and the other units are fictional; budgets,
-expenses and activity labels are generated synthetic data of realistic magnitude. No real
-organisation, spreadsheet, ledger or transaction is referenced.
+## 6. System Design
 
-## Run locally
+Static site: one HTML shell, four JS/CSS assets, no framework, no build step, no
+backend. `app.js` is a single IIFE with a small state object; charts are hand-rolled
+SVG (viewBox-scaled) and CSS bar tracks, so there is no chart-library dependency and
+the page opens from `file://`. Rendering is full re-render on data change, which is
+cheap at this data size (~hundreds of lines). Optional `worker.js` (Cloudflare
+Workers style) exposes `GET /api/tabs` for tab discovery when the sheet's htmlview
+list is blocked by CORS; the dashboard degrades gracefully to `config.js` names. Vite
+exists only as a convenience for dev/preview. The design system lives entirely in
+`styles.css` (spec v2 tokens, dark-first, `data-theme` toggle, focus-visible rings,
+reduced-motion handling).
 
-```bash
-# no install needed — open the file directly
-open public/index.html
+## 7. Findings & Design Decisions
 
-# or with Vite
-npm install
-npm run dev          # http://localhost:5173
-```
+The synthetic dataset is shaped like a realistic group: one dominant SBU carrying most
+of the trade-offer budget, several units with Q1-only budgets entered, deliberate
+unbudgeted spend lines and a plain-Taka typo — so the dashboard exercises every
+exception path on first load. Key UI choices: dark-first data-dense palette (blue
+`#3B82F6` + amber `#D97706`, no violet), Fira Code for all numerals and headings with
+tabular figures, Fira Sans for body; KPI and card hover lift as the only motion beyond
+a ≤450 ms first-paint stagger; status communicated by pill + label, never by colour
+alone; tables scroll inside their own card to avoid page-level horizontal scroll at
+390 px. The % / absolute toggle exists because utilisation ranking and monetary
+materiality tell different stories.
 
-## Deploy on Vercel
+## 8. Limitations & Validity
 
-* Import the repository, **Framework Preset: Other** (static).
-* **Root Directory: `public`** · Build Command: *empty* · Output Directory: *empty*.
-* Alternative: keep root at the repo root with Preset **Vite**, Build Command
-  `npm run build` and Output Directory `public/dist`.
+All names, units, activities and figures are **synthetic**; nothing here describes a
+real organisation, ledger or transaction, and no real-world statistic is claimed. The
+keyword classifier is heuristic — it will mis-file creatively named lines, which is
+why overrides and the "lines classed as Trade" audit table exist. The parser assumes
+the specific Budget/Expense-per-tab grid; other workbook shapes are out of scope.
+Crore-level aggregation hides line-level noise; the drill-down is the remedy but is
+capped by what the source sheet contains.
+
+## 9. Reproducibility & Deployment
+
+Run locally: open `public/index.html` directly — no install, no network. With Vite:
+`npm install && npm run dev`. Deploy on Vercel: import the repo, Framework Preset
+**Other**, Root Directory `public`, no build command (Vite preset with output
+`public/dist` also works). The optional worker deploys with `wrangler` per
+`wrangler.toml`. To use your own data: put the sheet id in `assets/config.js`, share
+it *Anyone with the link → Viewer*, set `demoMode:false`. No environment variables are
+required for the static demo.

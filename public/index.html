@@ -6,8 +6,18 @@
 <title>Marketing Spend Review — demo</title>
 <meta name="description" content="NexaGroup (fictional) — quarterly marketing expense (Promotional & Trade offers) vs plan, and SBU-wise full-year marketing summary. Runs on synthetic demo data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css?v=3">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css?v=4">
+<script>
+/* Theme bootstrap — independent of dashboard logic (app.js untouched). */
+(function () {
+  try {
+    var t = localStorage.getItem("nexa-mkt-theme");
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 <header class="topbar">
@@ -16,9 +26,13 @@
     <h1>Marketing Spend Review <span class="muted" id="fy-label"></span></h1>
   </div>
   <div class="actions">
+    <span class="chip"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5 2 4.7v6.6L8 14.5l6-3.2V4.7L8 1.5Zm0 1.8 4.3 2.3L8 7.9 3.7 5.6 8 3.3ZM3.5 7.1 7.3 9.2v4L3.5 11V7.1Zm5.2 4v-4l3.8-2.1V11l-3.8 4.1Z"/></svg>Synthetic demo data</span>
     <div class="sync" id="sync-status" aria-live="polite">Loading…</div>
-    <a class="btn ghost" id="sheet-link" target="_blank" rel="noopener">Open sheet ↗</a>
-    <button class="btn primary" id="refresh-btn" type="button"><span class="spin" aria-hidden="true">⟳</span> Refresh data</button>
+    <a class="btn ghost" id="sheet-link" target="_blank" rel="noopener">Open sheet <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10"/></svg></a>
+    <button class="btn primary" id="refresh-btn" type="button"><span class="spin" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 8a6 6 0 1 1-1.8-4.3"/><path d="M14 2v4h-4"/></svg></span> Refresh data</button>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path class="moon" d="M13.5 9.8A5.8 5.8 0 0 1 6.2 2.5a5.8 5.8 0 1 0 7.3 7.3Z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -158,11 +172,31 @@
   </section>
 </main>
 
-<footer class="foot">Source: synthetic demo dataset (fictional “Marketing Budget vs Expense” workbook, one tab per business unit). <span id="foot-sync"></span></footer>
+<footer class="foot">Source: synthetic demo dataset (fictional “Marketing Budget vs Expense” workbook, one tab per business unit). <span id="foot-sync"></span> ·
+<a href="#tab-notes" id="method-link">Methodology</a> · Built by Abir</footer>
 <div id="tip" class="tip" role="tooltip"></div>
 
-<script src="assets/config.js?v=3"></script>
-<script src="assets/demo-data.js?v=3"></script>
-<script src="assets/app.js?v=3"></script>
+<script>
+/* Theme toggle + methodology link — presentation-only, dashboard logic untouched. */
+(function () {
+  var root = document.documentElement, btn = document.getElementById("theme-toggle");
+  if (btn) btn.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("nexa-mkt-theme", next); } catch (e) {}
+  });
+  var link = document.getElementById("method-link");
+  if (link) link.addEventListener("click", function (ev) {
+    ev.preventDefault();
+    var t = document.querySelector('.tab[data-tab="notes"]');
+    if (t) t.click();
+    var p = document.getElementById("tab-notes");
+    if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+})();
+</script>
+<script src="assets/config.js?v=4"></script>
+<script src="assets/demo-data.js?v=4"></script>
+<script src="assets/app.js?v=4"></script>
 </body>
 </html>
